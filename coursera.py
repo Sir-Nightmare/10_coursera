@@ -47,7 +47,7 @@ def get_course_info(course_url):
     return course_info
 
 
-def output_courses_info_to_xlsx(filepath, courses_info):
+def output_info_to_workbook(filepath, courses_info):
     headers = ['Title', 'Language', 'Start Date', 'Duration (weeks)', 'Course Rate', 'URL']
     wb = Workbook()
     sheet = wb.active
@@ -56,7 +56,7 @@ def output_courses_info_to_xlsx(filepath, courses_info):
     for num, info_about_course in enumerate(courses_info, 2):
         for i, key in enumerate(headers, 1):
             sheet.cell(row=num, column=i).value = info_about_course[key]
-    wb.save(join(filepath, 'Courses from Coursera.xlsx'))
+    return wb
 
 
 if __name__ == '__main__':
@@ -67,5 +67,6 @@ if __name__ == '__main__':
     links = get_courses_urls(COURSES_XML_URL, args.number)
     print('Getting courses info has been started')
     courses_info = [get_course_info(link) for link in links]
-    output_courses_info_to_xlsx(args.path, courses_info)
+    work_book = output_info_to_workbook(args.path, courses_info)
+    work_book.save(join(args.path, 'Courses from Coursera.xlsx'))
     print('Done!')
