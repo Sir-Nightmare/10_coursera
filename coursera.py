@@ -15,11 +15,10 @@ def convert_soup_to_text(tag):
     return tag.text if tag else None
 
 
-def get_courses_urls(xml_url, quantity=20):
-    xml_page = requests.get(xml_url)
-    root = etree.fromstring(xml_page.content)
+def get_courses_urls(xml_page):
+    root = etree.fromstring(xml_page)
     urls = [url.text for url in root.iter('{*}loc')]
-    return sample(urls, quantity)
+    return urls
 
 
 def get_datetime_course(soup):
@@ -28,8 +27,15 @@ def get_datetime_course(soup):
         return json.loads(json_course)['hasCourseInstance'][0]['startDate']
 
 
-def get_course_info(course_url):
-    page = requests.get(course_url).content
+def get_course_pages(url_list):
+    pages = []
+    s = requests.session()
+    for url in url_list:
+        pages.append(s.get(url).content)
+    return pages
+
+
+def parse_course_info(page, course_url):
     soup = BeautifulSoup(page, 'html.parser')
     course_name = soup.find('div', {'class': 'title display-3-text'}).text
     course_lang = soup.find('div', {'class': 'language-info'}).text
@@ -64,9 +70,12 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--path', default='', type=str, help='Input full path to folder')
     parser.add_argument('-n', '--number', default=20, type=int, help='Input number of courses')
     args = parser.parse_args()
-    links = get_courses_urls(COURSES_XML_URL, args.number)
+    courses_xml_page = requests.get(COURSES_XML_URL).content
+    urls = get_courses_urls(courses_xml_page)
+    sample_urls = sample(urls, args.number)
     print('Getting courses info has been started')
-    courses_info = [get_course_info(link) for link in links]
+    course_pages = get_course_pages(sample_urls)
+    courses_info = [parse_course_info(page, url) for page, url in zip(course_pages, sample_urls)]
     work_book = output_info_to_workbook(courses_info)
     work_book.save(join(args.path, 'Courses from Coursera.xlsx'))
     print('Done!')
